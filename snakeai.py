@@ -12,7 +12,7 @@ class SnakeAI:
         apple_direction = self.direction_to_apple(head, state.apple)
         safe_options = self.filter_options(state)
         
-        if random.random() < 0 and safe_options: # 50% chance of choosing a random safe direction
+        if random.random() < 0.2 and safe_options: # 50% chance of choosing a random safe direction
             return random.choice(safe_options)
 
         ai_decision = self.choose_best_direction(state.snake_direction, apple_direction, safe_options)
@@ -37,7 +37,7 @@ class SnakeAI:
     def choose_best_direction(self, current_direction: tuple, apple_direction: tuple, safe_options: list) -> tuple:
         options = [DOWN, UP, RIGHT, LEFT]
 
-        # Remove the opposite direction of the current direction from options
+        # Cant do 180s so remove the opposite direction of the current direction from options
         opposite_direction = (-current_direction[0], -current_direction[1])
         options.remove(opposite_direction)
 
@@ -55,18 +55,34 @@ class SnakeAI:
         if current_direction in safe_options:
             return current_direction
         # If no safe options are available, return a random direction (inevitable death)
-        return random.choice([DOWN, UP, RIGHT, LEFT])
+        #broken code ===> return random.choice([DOWN, UP, RIGHT, LEFT])
+        return random.choice(safe_options)
 
-    def filter_options(self, state: GameState) -> list:
+
+    # Step 5 Recursive checks
+    def filter_options(self, state: GameState, depth: int = 0) -> list:
+        MAX_DEPTH = 10
+
+        # If depth is larger than the max depth, return all possible options
+        if depth > MAX_DEPTH:
+            return [DOWN, UP, RIGHT, LEFT]
+
         options = [DOWN, UP, RIGHT, LEFT]
         safe_options = []
 
         for direction in options:
             simulated_state = simulate_move(state, direction)
+
             if not simulated_state.is_game_over():
-                safe_options.append(direction)
+                # Call filter_options recursively with the new GameState and increased depth
+                sub_options = self.filter_options(simulated_state, depth + 1)
+
+                # If there are any sub-options, the original option is considered viable
+                if sub_options:
+                    safe_options.append(direction)
 
         return safe_options
+
     
 
 # This function creates a copy the current state, given a state and a direction you wish to test
